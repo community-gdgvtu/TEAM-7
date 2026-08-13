@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import { Silkscreen, VT323 } from "next/font/google";
+import { Plus_Jakarta_Sans, Silkscreen, VT323 } from "next/font/google";
 import "./globals.css";
+
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 const pixel = Silkscreen({
   subsets: ["latin"],
@@ -24,8 +31,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${pixel.variable} ${terminal.variable}`}>
+    <html lang="en" className={`${sans.variable} ${pixel.variable} ${terminal.variable}`}>
       <body>{children}</body>
     </html>
   );
 }
+

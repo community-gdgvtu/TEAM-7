@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { rupees } from "@/lib/api";
 import { useMissionStream } from "@/lib/useMissionStream";
 import type { Counterparty, Line } from "@/lib/types";
+import { useWorkerAnimation } from "./office/useWorkerAnimation";
+import { WorkerAgent } from "./office/WorkerAgent";
 
 /**
  * The office. One desk per open line, the manager down front, everything the
@@ -32,15 +34,21 @@ export function Office({
 }) {
   const router = useRouter();
   const s = useMissionStream(missionId, heroMetric, counterparties);
-  const lines = s.order.map((id) => s.lines.get(id)).filter(Boolean) as Line[];
+  const lines = useMemo(
+    () => s.order.map((id) => s.lines.get(id)).filter(Boolean) as Line[],
+    [s.order, s.lines]
+  );
 
   const [openDesk, setOpenDesk] = useState<string | null>(null);
   const [resultsDismissed, setResultsDismissed] = useState(false);
+  const [use3js, setUse3js] = useState(false);
+  const [demoMovement, setDemoMovement] = useState(false);
 
   const anyTurns = lines.some((l) => l.turns.length > 0);
   const briefing = !s.ended && !anyTurns;
   const spots = deskSpots(Math.max(lines.length, DESK_COUNT));
   const specText = summariseSpec(spec);
+  const workerAgents = useWorkerAnimation(lines, briefing, use3js, demoMovement);
 
   const openLine = openDesk ? lines.find((l) => l.cp.id === openDesk) : null;
   const winner = s.best ? lines.find((l) => l.cp.id === s.best!.cpId) : null;
@@ -95,6 +103,7 @@ export function Office({
           {spots.map((spot, i) => {
             const line = lines[i];
             if (!line) return <EmptyDesk key={`empty-${i}`} index={i} spot={spot} />;
+            const worker = workerAgents[i];
             return (
               <Desk
                 key={line.cp.id}
@@ -103,6 +112,7 @@ export function Office({
                 spot={spot}
                 briefing={briefing}
                 heroMetric={heroMetric}
+                worker={worker}
                 onOpen={() => setOpenDesk(line.cp.id)}
               />
             );
@@ -124,9 +134,27 @@ export function Office({
           <span className="query">
             {title} · <b>{specText}</b>
           </span>
-          <button className="px-btn ghost" onClick={() => router.push("/")}>
-            New mission
-          </button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+              className="px-btn ghost"
+              style={{ fontSize: "11px", padding: "4px 8px" }}
+              onClick={() => setDemoMovement((prev) => !prev)}
+              title="Trigger worker movement animation"
+            >
+              Worker Motion: {demoMovement ? "ACTIVE" : "OFF"}
+            </button>
+            <button
+              className="px-btn ghost"
+              style={{ fontSize: "11px", padding: "4px 8px" }}
+              onClick={() => setUse3js((prev) => !prev)}
+              title="Toggle 3JS / Three.js 3D movement objects"
+            >
+              3JS Objects: {use3js ? "ON" : "OFF"}
+            </button>
+            <button className="px-btn ghost" onClick={() => router.push("/")}>
+              New mission
+            </button>
+          </div>
         </div>
       </div>
 
@@ -156,6 +184,7 @@ function Desk({
   spot,
   briefing,
   heroMetric,
+  worker,
   onOpen,
 }: {
   line: Line;
@@ -163,6 +192,7 @@ function Desk({
   spot: { left: number; top: number };
   briefing: boolean;
   heroMetric: string;
+  worker?: import("./office/OfficeLocation").WorkerAgent;
   onOpen: () => void;
 }) {
   const sprite = WORKER_SPRITES[index % WORKER_SPRITES.length];
@@ -197,9 +227,20 @@ function Desk({
         </span>
       ) : null}
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={sprite} alt={`Agent at desk ${index + 1}`} />
-      <span className="px-plate plate">{shortName(line.cp.name)}</span>
+      {worker ? (
+        <WorkerAgent
+          worker={worker}
+          cpName={line.cp.name}
+          lastText={line.lastText}
+          lastRole={line.lastRole}
+        />
+      ) : (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={sprite} alt={`Agent at desk ${index + 1}`} />
+          <span className="px-plate plate">{shortName(line.cp.name)}</span>
+        </>
+      )}
 
       <button className="hit" onClick={onOpen} aria-label={`Open the call with ${line.cp.name}`} />
     </div>
