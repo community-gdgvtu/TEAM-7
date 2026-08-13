@@ -16,6 +16,7 @@ import type { Language } from '../types';
 import { authStore, UserProfile } from '../stores/authStore';
 
 import { NotificationCenter } from './NotificationCenter';
+import { LocationStatusWidget } from './LocationStatusWidget';
 
 interface NavbarProps {
   activeTab: 'customer' | 'negotiation' | 'results' | 'seller' | 'admin' | 'command_center';
@@ -25,6 +26,7 @@ interface NavbarProps {
   isNegotiating: boolean;
   bestOffer: number | null;
   onOpenAuth: () => void;
+  onOpenLocationPicker: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -34,7 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setLanguage,
   isNegotiating,
   bestOffer,
-  onOpenAuth
+  onOpenAuth,
+  onOpenLocationPicker,
 }) => {
   const [user, setUser] = useState<UserProfile | null>(authStore.getUser());
 
@@ -157,6 +160,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Controls */}
           <div className="flex items-center gap-3">
+            <LocationStatusWidget onOpenPicker={onOpenLocationPicker} />
+
             <NotificationCenter />
 
             {bestOffer !== null && (

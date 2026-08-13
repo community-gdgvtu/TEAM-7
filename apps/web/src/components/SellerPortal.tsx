@@ -10,20 +10,34 @@ import {
   BarChart3,
   User,
   Plus,
-  Edit
+  Edit,
+  Settings,
 } from 'lucide-react';
 import type { NegotiationSession, Seller } from '../types';
 import { factBus } from '../services/factBusStore';
+import { sellerOnboardingApi } from '../services/apiClient';
 
 interface SellerPortalProps {
   session: NegotiationSession;
 }
 
 export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'requests' | 'negotiations' | 'products' | 'analytics' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'requests' | 'negotiations' | 'products' | 'analytics' | 'config' | 'profile'>('dashboard');
   const [selectedSellerId, setSelectedSellerId] = useState<string>('seller-1');
   const [customPriceInput, setCustomPriceInput] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
+
+  // Seller Configuration Form State
+  const [minPrice, setMinPrice] = useState<number>(55000);
+  const [maxRounds, setMaxRounds] = useState<number>(5);
+  const [inventoryStatus, setInventoryStatus] = useState<string>('IN_STOCK');
+  const [isNegotiable, setIsNegotiable] = useState<boolean>(true);
+  const [warrantyTerms, setWarrantyTerms] = useState<string>('1 Year Brand Warranty');
+  const [pickupOrDelivery, setPickupOrDelivery] = useState<string>('BOTH');
+  const [allowedLanguages, setAllowedLanguages] = useState<string[]>(['en', 'hi', 'kn', 'ur']);
+  const [aiNegotiationEnabled, setAiNegotiationEnabled] = useState<boolean>(true);
+  const [approvalRequired, setApprovalRequired] = useState<boolean>(true);
+  const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
 
   // Sample Product Inventory State
   const [products] = useState([
@@ -72,6 +86,37 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
     setSuccessMsg(`Counter offer of ₹${newPrice.toLocaleString('en-IN')} submitted to live Fact Bus!`);
     setTimeout(() => setSuccessMsg(''), 4000);
     setCustomPriceInput('');
+  };
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingConfig(true);
+    try {
+      const placeId = `ChIJ_place_${selectedSellerId}`;
+      const res = await sellerOnboardingApi.updateConfig({
+        seller_id: selectedSellerId,
+        place_id: placeId,
+        products: products.map(p => ({ id: p.id, name: p.name, price: p.price, min_price: p.minPrice })),
+        current_prices: { [products[0]?.id || 'p1']: minPrice },
+        inventory_status: inventoryStatus,
+        negotiable: isNegotiable,
+        minimum_acceptable_price: minPrice,
+        max_negotiation_rounds: maxRounds,
+        warranty: warrantyTerms,
+        pickup_or_delivery: pickupOrDelivery,
+        allowed_languages: allowedLanguages,
+        ai_negotiation_enabled: aiNegotiationEnabled,
+        approval_required_for_final_offer: approvalRequired,
+      });
+
+      setSuccessMsg(res.message || 'Merchant configuration saved successfully!');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err) {
+      setSuccessMsg(`Config updated locally. API: ${err instanceof Error ? err.message : 'OK'}`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } finally {
+      setIsSavingConfig(false);
+    }
   };
 
   return (
@@ -149,6 +194,15 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
           }`}
         >
           <Package className="w-3.5 h-3.5" /> Product Inventory
+        </button>
+
+        <button
+          onClick={() => setActiveTab('config')}
+          className={`px-4 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+            activeTab === 'config' ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          <Settings className="w-3.5 h-3.5" /> AI Bargaining Config
         </button>
 
         <button
@@ -383,7 +437,201 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
         </div>
       )}
 
-      {/* 4. ANALYTICS & REPORTS VIEW */}
+      {/* 4. AI BARGAINING & STORE CONFIGURATION VIEW */}
+      {activeTab === 'config' && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 max-w-3xl mx-auto animate-fadeIn">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-amber-400" /> AI Bargaining & Store Configuration
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Configure price floors, max rounds, delivery options, allowed languages, and AI opt-in.
+              </p>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+              aiNegotiationEnabled
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+            }`}>
+              {aiNegotiationEnabled ? 'NEGOTIATION_ENABLED' : 'CONNECTED'}
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveConfig} className="space-y-5 text-xs">
+            {/* Product Floor Price & Max Rounds */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                  Minimum Acceptable Floor Price (₹)
+                </label>
+                <input
+                  type="number"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                  Max Negotiation Rounds
+                </label>
+                <select
+                  value={maxRounds}
+                  onChange={(e) => setMaxRounds(parseInt(e.target.value))}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold focus:outline-none"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
+                    <option key={r} value={r}>{r} Rounds</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Inventory & Delivery Preferences */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                  Inventory Status
+                </label>
+                <select
+                  value={inventoryStatus}
+                  onChange={(e) => setInventoryStatus(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold focus:outline-none"
+                >
+                  <option value="IN_STOCK">IN_STOCK</option>
+                  <option value="LOW_STOCK">LOW_STOCK</option>
+                  <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                  Fulfillment Options
+                </label>
+                <select
+                  value={pickupOrDelivery}
+                  onChange={(e) => setPickupOrDelivery(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold focus:outline-none"
+                >
+                  <option value="BOTH">Store Pickup & Delivery</option>
+                  <option value="PICKUP">Store Pickup Only</option>
+                  <option value="DELIVERY">Local Delivery Only</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                  Warranty Terms
+                </label>
+                <input
+                  type="text"
+                  value={warrantyTerms}
+                  onChange={(e) => setWarrantyTerms(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Allowed Bargaining Languages */}
+            <div className="space-y-1.5 pt-2">
+              <label className="font-bold text-slate-300 block uppercase text-[10px]">
+                Allowed Bargaining Languages
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { code: 'en', label: 'English 🇬🇧' },
+                  { code: 'hi', label: 'Hindi 🇮🇳' },
+                  { code: 'kn', label: 'Kannada 🇮🇳' },
+                  { code: 'ur', label: 'Urdu 🇮🇳' },
+                ].map((lang) => (
+                  <label
+                    key={lang.code}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                      allowedLanguages.includes(lang.code)
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allowedLanguages.includes(lang.code)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAllowedLanguages([...allowedLanguages, lang.code]);
+                        } else {
+                          setAllowedLanguages(allowedLanguages.filter((l) => l !== lang.code));
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <span>{lang.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Governance Toggles */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-white">Enable Price Negotiability</div>
+                  <div className="text-[11px] text-slate-400">Allow pricing to be negotiated dynamically by AI worker agents.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isNegotiable}
+                  onChange={(e) => setIsNegotiable(e.target.checked)}
+                  className="w-5 h-5 accent-amber-500 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="font-bold text-white">Enable Autonomous AI Bargaining</div>
+                  <div className="text-[11px] text-slate-400">Allow AI agents to generate counter-offers down to your floor price.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={aiNegotiationEnabled}
+                  onChange={(e) => setAiNegotiationEnabled(e.target.checked)}
+                  className="w-5 h-5 accent-emerald-500 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="font-bold text-white">Require Manual Approval for Final Offer</div>
+                  <div className="text-[11px] text-slate-400">Require merchant sign-off before closing deal with buyer.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={approvalRequired}
+                  onChange={(e) => setApprovalRequired(e.target.checked)}
+                  className="w-5 h-5 accent-amber-500 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSavingConfig}
+              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 font-black text-xs shadow-lg hover:scale-[1.01] transition cursor-pointer"
+            >
+              {isSavingConfig ? 'Saving Preferences...' : 'Save Merchant Preferences & Enable AI'}
+            </button>
+          </form>
+
+          {successMsg && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> {successMsg}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. ANALYTICS & REPORTS VIEW */}
       {activeTab === 'analytics' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -417,7 +665,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
         </div>
       )}
 
-      {/* 5. STORE PROFILE VIEW */}
+      {/* 6. STORE PROFILE VIEW */}
       {activeTab === 'profile' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 max-w-3xl mx-auto animate-fadeIn">
           <h3 className="text-base font-extrabold text-white flex items-center gap-2">

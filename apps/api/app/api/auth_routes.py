@@ -11,15 +11,44 @@ from app.schemas.auth_schemas import (
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.database import users_col, sellers_col
 from app.core.dependencies import get_current_user
+from app.core.rbac import rbac_engine, UserRole
 
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+
+def _build_user_response(user_doc: dict) -> UserResponseSchema:
+    """
+    Builds a UserResponseSchema from a MongoDB user document.
+    Re-derives permissions from role (never trusts stored permissions).
+    """
+    role = user_doc.get("role", UserRole.CUSTOMER.value)
+    return UserResponseSchema(
+        id=user_doc.get("_id", user_doc.get("id", "")),
+        email=user_doc["email"],
+        name=user_doc.get("name", "User"),
+        role=role,
+        phone=user_doc.get("phone"),
+        location=user_doc.get("location"),
+        created_at=user_doc.get("created_at", time.strftime("%Y-%m-%d %H:%M:%S")),
+        permissions=rbac_engine.get_permissions_as_strings(role),
+    )
+
+
+def _role_level(role: str) -> int:
+    levels = {
+        UserRole.CUSTOMER.value:    1,
+        UserRole.SELLER.value:      2,
+        UserRole.ADMIN.value:       3,
+        UserRole.SUPER_ADMIN.value: 4,
+    }
+    return levels.get(role, 1)
+
+
 @auth_router.post("/register/customer", response_model=TokenResponseSchema, status_code=status.HTTP_201_CREATED)
 def register_customer(payload: CustomerRegisterSchema):
-    """Registers a new customer account."""
+    """Registers a new customer account with CUSTOMER role and negotiation permissions."""
     email_clean = payload.email.lower().strip()
-    
-    # Check if user already exists
+
     if users_col.find_one({"email": email_clean}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,40 +57,37 @@ def register_customer(payload: CustomerRegisterSchema):
 
     user_id = f"usr-{int(time.time())}-{random.randint(100, 999)}"
     now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+    role = UserRole.CUSTOMER.value
 
     user_doc = {
         "_id": user_id,
         "email": email_clean,
         "password_hash": hash_password(payload.password),
         "name": payload.name,
-        "role": "CUSTOMER",
+        "role": role,
         "phone": payload.phone,
         "location": payload.location,
-        "created_at": now_str
+        "created_at": now_str,
+        "owner_id": user_id,  # Self-ownership for profile operations
     }
-
     users_col.insert_one(user_doc)
 
-    # Issue JWT Token
-    token = create_access_token({"sub": user_id, "email": email_clean, "role": "CUSTOMER"})
+    token = create_access_token({"sub": user_id, "email": email_clean, "role": role})
+    user_resp = _build_user_response(user_doc)
 
-    user_resp = UserResponseSchema(
-        id=user_id,
-        email=email_clean,
-        name=payload.name,
-        role="CUSTOMER",
-        phone=payload.phone,
-        location=payload.location,
-        created_at=now_str
+    return TokenResponseSchema(
+        access_token=token,
+        token_type="bearer",
+        user=user_resp,
+        role_level=_role_level(role)
     )
 
-    return TokenResponseSchema(access_token=token, token_type="bearer", user=user_resp)
 
 @auth_router.post("/register/seller", response_model=TokenResponseSchema, status_code=status.HTTP_201_CREATED)
 def register_seller(payload: SellerRegisterSchema):
-    """Registers a new merchant account and creates seller profile in MongoDB Atlas."""
+    """Registers a new merchant account with SELLER role and business permissions."""
     email_clean = payload.email.lower().strip()
-    
+
     if users_col.find_one({"email": email_clean}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -69,8 +95,9 @@ def register_seller(payload: SellerRegisterSchema):
         )
 
     user_id = f"usr-seller-{int(time.time())}-{random.randint(100, 999)}"
-    seller_id = f"seller-custom-{random.randint(100, 999)}"
+    seller_id = f"seller-custom-{random.randint(1000, 9999)}"
     now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+    role = UserRole.SELLER.value
 
     # 1. Create User Document
     user_doc = {
@@ -78,24 +105,27 @@ def register_seller(payload: SellerRegisterSchema):
         "email": email_clean,
         "password_hash": hash_password(payload.password),
         "name": payload.name,
-        "role": "SELLER",
+        "role": role,
         "phone": payload.phone,
         "location": payload.location,
         "seller_id": seller_id,
-        "created_at": now_str
+        "created_at": now_str,
+        "owner_id": user_id,
     }
     users_col.insert_one(user_doc)
 
-    # 2. Create Seller Store Document in MongoDB Atlas 'sellers' collection
+    # 2. Create Seller Store Document — owner_id links seller profile to this user
     seller_doc = {
         "_id": seller_id,
+        "owner_id": user_id,          # OWNERSHIP: this user owns this seller profile
+        "owner_user_id": user_id,
         "name": payload.shop_name,
         "category": payload.category,
         "location": payload.location or "Hulkoti Market, Gadag",
         "address": payload.address,
         "distance_km": 1.2,
         "rating": 4.8,
-        "verification_status": "VERIFIED",
+        "verification_status": "PENDING",  # Requires ADMIN seller:verify
         "response_rate": 96,
         "tenure_years": 1,
         "deals_completed": 1,
@@ -104,28 +134,29 @@ def register_seller(payload: SellerRegisterSchema):
         "warranty_offered": "1 Year Merchant Warranty",
         "stock_status": "IN_STOCK",
         "delivery_offered": True,
-        "phone": payload.phone
+        "phone": payload.phone,
     }
     sellers_col.insert_one(seller_doc)
 
-    # 3. Issue JWT Token
-    token = create_access_token({"sub": user_id, "email": email_clean, "role": "SELLER", "seller_id": seller_id})
+    token = create_access_token({
+        "sub": user_id,
+        "email": email_clean,
+        "role": role,
+        "seller_id": seller_id,
+    })
+    user_resp = _build_user_response(user_doc)
 
-    user_resp = UserResponseSchema(
-        id=user_id,
-        email=email_clean,
-        name=payload.name,
-        role="SELLER",
-        phone=payload.phone,
-        location=payload.location,
-        created_at=now_str
+    return TokenResponseSchema(
+        access_token=token,
+        token_type="bearer",
+        user=user_resp,
+        role_level=_role_level(role)
     )
 
-    return TokenResponseSchema(access_token=token, token_type="bearer", user=user_resp)
 
 @auth_router.post("/login", response_model=TokenResponseSchema)
 def login(payload: LoginSchema):
-    """Authenticates credentials and issues JWT access token."""
+    """Authenticates credentials and issues JWT with role-derived permissions."""
     email_clean = payload.email.lower().strip()
     user = users_col.find_one({"email": email_clean})
 
@@ -133,38 +164,32 @@ def login(payload: LoginSchema):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     user_id = user["_id"]
-    role = user.get("role", "CUSTOMER")
-    
-    token = create_access_token({"sub": user_id, "email": email_clean, "role": role})
+    role = user.get("role", UserRole.CUSTOMER.value)
 
-    user_resp = UserResponseSchema(
-        id=user_id,
-        email=user["email"],
-        name=user.get("name", "User"),
-        role=role,
-        phone=user.get("phone"),
-        location=user.get("location"),
-        created_at=user.get("created_at", time.strftime("%Y-%m-%d %H:%M:%S"))
+    token_data: dict = {"sub": user_id, "email": email_clean, "role": role}
+    if "seller_id" in user:
+        token_data["seller_id"] = user["seller_id"]
+
+    token = create_access_token(token_data)
+    user_resp = _build_user_response(user)
+
+    return TokenResponseSchema(
+        access_token=token,
+        token_type="bearer",
+        user=user_resp,
+        role_level=_role_level(role)
     )
 
-    return TokenResponseSchema(access_token=token, token_type="bearer", user=user_resp)
 
 @auth_router.get("/me", response_model=UserResponseSchema)
 def get_me(current_user: dict = Depends(get_current_user)):
-    """Returns the authenticated user's profile."""
-    return UserResponseSchema(
-        id=current_user["id"],
-        email=current_user["email"],
-        name=current_user.get("name", "User"),
-        role=current_user.get("role", "CUSTOMER"),
-        phone=current_user.get("phone"),
-        location=current_user.get("location"),
-        created_at=current_user.get("created_at", "")
-    )
+    """Returns the authenticated user's profile with current permission set."""
+    return _build_user_response(current_user)
+
 
 @auth_router.post("/logout")
 def logout(current_user: dict = Depends(get_current_user)):

@@ -10,6 +10,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "panchayat_ai_super_secret_jwt_key_2026
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 Hours
 
+
 def hash_password(password: str) -> str:
     """
     Hashes a password using PBKDF2-HMAC-SHA256 with a random salt.
@@ -23,6 +24,7 @@ def hash_password(password: str) -> str:
         100_000
     ).hex()
     return f"{salt}${pwd_hash}"
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -40,31 +42,39 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
+
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """
     Generates a signed JWT access token.
+
+    Automatically embeds the canonical permission list derived from the role.
+    This is for CLIENT UX ONLY — the server always re-derives permissions
+    from the 'role' claim via the RBAC engine and never trusts 'permissions'.
     """
+    from app.core.rbac import rbac_engine  # Deferred to avoid circular import
+
     to_encode = data.copy()
     now = datetime.now(timezone.utc)
-    if expires_delta:
-        expire = now + expires_delta
-    else:
-        expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    role = data.get("role", "CUSTOMER")
 
     to_encode.update({
         "exp": expire,
-        "iat": now
+        "iat": now,
+        # Embed permissions for frontend UX (hide/show UI elements).
+        # SERVER MUST NOT trust this — always re-derive via rbac_engine.get_permissions().
+        "permissions": rbac_engine.get_permissions_as_strings(role),
     })
-    
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Decodes and validates a JWT access token. Returns payload or None if invalid/expired.
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except Exception:
         return None

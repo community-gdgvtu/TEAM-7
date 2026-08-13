@@ -1,10 +1,17 @@
+import os
+import sys
 import time
+
+# Ensure apps/api is on sys.path when executed directly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as api_router
 from app.api.auth_routes import auth_router
 from app.api.admin_routes import admin_router
 from app.api.websockets import router as ws_router
+
 
 from app.core.observability import (
     RequestObservabilityMiddleware,

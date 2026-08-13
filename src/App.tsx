@@ -8,6 +8,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { CommandCenter } from './components/CommandCenter';
 import { VoiceModal } from './components/VoiceModal';
 import { AuthModal } from './components/AuthModal';
+import { LocationPickerModal } from './components/LocationPickerModal';
 import type { Language, NegotiationSession, Requirement } from './types';
 import { factBus } from './services/factBusStore';
 import { discoverLocalSellers } from './services/discoveryAgent';
@@ -19,6 +20,7 @@ export function App() {
   const [session, setSession] = useState<NegotiationSession>(factBus.getSession());
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = factBus.subscribe((updatedSession) => {
@@ -63,6 +65,7 @@ export function App() {
         isNegotiating={session.status === 'NEGOTIATING'}
         bestOffer={session.bestOffer}
         onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenLocationPicker={() => setIsLocationModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -116,6 +119,11 @@ export function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      <LocationPickerModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
       />
 
     </div>
