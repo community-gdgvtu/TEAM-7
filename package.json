@@ -1,0 +1,28 @@
+{
+  "name": "panchayat-ai",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Panchayat AI — AI-Powered Local Market Negotiation & Price Discovery Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "dev:api": "cd apps/api && python -m uvicorn app.main:app --reload --port 8000",
+    "build": "npm --prefix apps/web run build",
+    "test": "npm --prefix apps/web test"
+  },
+  "keywords": [
+    "panchayat-ai",
+    "multi-agent",
+    "fact-bus",
+    "price-discovery",
+    "fastapi",
+    "nextjs",
+    "react"
+  ],
+  "author": "TEAM-7",
+  "license": "MIT"
+}
