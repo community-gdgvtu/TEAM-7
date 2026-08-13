@@ -34,7 +34,10 @@ export function Office({
 }) {
   const router = useRouter();
   const s = useMissionStream(missionId, heroMetric, counterparties);
-  const lines = s.order.map((id) => s.lines.get(id)).filter(Boolean) as Line[];
+  const lines = useMemo(
+    () => s.order.map((id) => s.lines.get(id)).filter(Boolean) as Line[],
+    [s.order, s.lines]
+  );
 
   const [openDesk, setOpenDesk] = useState<string | null>(null);
   const [resultsDismissed, setResultsDismissed] = useState(false);

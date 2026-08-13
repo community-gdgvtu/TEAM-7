@@ -27,7 +27,8 @@ export function ThreeMovementObject({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const webglCtx = (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")) as WebGLRenderingContext | null;
-    const ctx2d = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     let animId: number;
     let rotation = 0;
@@ -54,19 +55,7 @@ export function ThreeMovementObject({
       rotation += 0.03;
       const colors = getStateColors(state);
 
-      if (webglCtx) {
-        // WebGL 3D scene clearing & background setup
-        webglCtx.viewport(0, 0, canvas.width, canvas.height);
-        webglCtx.clearColor(0.0, 0.0, 0.0, 0.0);
-        webglCtx.clear(webglCtx.COLOR_BUFFER_BIT | webglCtx.DEPTH_BUFFER_BIT);
-        webglCtx.enable(webglCtx.BLEND);
-        webglCtx.blendFunc(webglCtx.SRC_ALPHA, webglCtx.ONE_MINUS_SRC_ALPHA);
-      }
-
-      // 2D/WebGL hybrid fallback canvas rendering for 3D projections
-      if (ctx2d) {
-        const ctx = ctx2d;
-        ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
         const cx = width / 2;
         const cy = height / 2;
@@ -122,7 +111,6 @@ export function ThreeMovementObject({
         ctx.fillStyle = colors.primary;
         ctx.textAlign = "center";
         ctx.fillText(`3JS: ${colors.label}`, cx, height - 6);
-      }
 
       animId = requestAnimationFrame(renderFrame);
     };

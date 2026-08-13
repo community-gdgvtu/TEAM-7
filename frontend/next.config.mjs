@@ -3,12 +3,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 
-// Load environment variables if .env exists
-const currentDir = dirname(fileURLToPath(import.meta.url));
-const rootEnv = resolve(currentDir, "../../.env");
-const localEnv = resolve(currentDir, ".env");
+// Next only reads .env from its own project directory. The workspace keeps one
+// .env at the root, so pull that in before the config is evaluated.
+const rootEnv = resolve(dirname(fileURLToPath(import.meta.url)), "../../.env");
 if (existsSync(rootEnv)) loadEnv({ path: rootEnv });
-if (existsSync(localEnv)) loadEnv({ path: localEnv });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

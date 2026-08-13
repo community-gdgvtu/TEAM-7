@@ -71,7 +71,7 @@ export function useMissionStream(missionId: string | null, heroMetric: string, c
     setState({ ...EMPTY, heroMetric, lines, order: counterparties.map((c) => c.id), connected: false });
 
     const source = new EventSource(`${API}/missions/${missionId}/events`);
-    source.onopen = () => setState((s) => ({ ...s, connected: true }));
+    source.onopen = () => setState((s) => (s.connected ? s : { ...s, connected: true }));
 
     source.onmessage = (msg) => {
       let event: MissionEvent;
@@ -83,7 +83,7 @@ export function useMissionStream(missionId: string | null, heroMetric: string, c
       setState((prev) => reduce(prev, event, ++seq.current));
     };
 
-    source.onerror = () => setState((s) => ({ ...s, connected: false }));
+    source.onerror = () => setState((s) => (!s.connected ? s : { ...s, connected: false }));
 
     return () => source.close();
     // counterparties is a stable array handed in once with the mission.
