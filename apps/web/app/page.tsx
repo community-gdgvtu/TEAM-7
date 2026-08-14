@@ -59,23 +59,28 @@ export default function Home() {
   const isPlayingVideoRef = useRef(false);
   const pendingOutputRef = useRef<OutputResponse | null>(null);
   const pendingErrorRef = useRef<string | null>(null);
-  const slowMotionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasPausedAtThreeRef = useRef(false);
+  const pauseResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     api.skills().then((r) => setSkills(r.skills)).catch((e) => setError(String(e.message)));
     api.health().then((h) => setConfig({ test_number: h.test_number, twilio: h.twilio })).catch(() => undefined);
     api.stats().then(setStats).catch(() => undefined);
+
+    return () => {
+      clearPauseResumeTimer();
+    };
   }, []);
 
-  function clearSlowMotionTimer() {
-    if (slowMotionTimerRef.current) {
-      clearTimeout(slowMotionTimerRef.current);
-      slowMotionTimerRef.current = null;
+  function clearPauseResumeTimer() {
+    if (pauseResumeTimerRef.current) {
+      clearTimeout(pauseResumeTimerRef.current);
+      pauseResumeTimerRef.current = null;
     }
   }
 
   function handleVideoPlaybackError() {
-    clearSlowMotionTimer();
+    clearPauseResumeTimer();
     isPlayingVideoRef.current = false;
     setIsPlayingVideo(false);
     if (pendingOutputRef.current) {
@@ -95,8 +100,30 @@ export default function Home() {
     }
   }
 
+  function handleTimeUpdate() {
+    if (!videoRef.current || !isPlayingVideoRef.current) return;
+    const v = videoRef.current;
+    // At exactly 3 seconds, pause playback for 4 seconds, then automatically resume
+    if (v.currentTime >= 3.0 && !hasPausedAtThreeRef.current) {
+      hasPausedAtThreeRef.current = true;
+      v.pause();
+      clearPauseResumeTimer();
+      pauseResumeTimerRef.current = setTimeout(() => {
+        if (videoRef.current && isPlayingVideoRef.current) {
+          const playPromise = videoRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((e) => {
+              console.warn("Video auto-resume error:", e);
+            });
+          }
+        }
+      }, 4000);
+    }
+  }
+
   function startVideoPlayback() {
-    clearSlowMotionTimer();
+    clearPauseResumeTimer();
+    hasPausedAtThreeRef.current = false;
     videoEndedRef.current = false;
     pendingOutputRef.current = null;
     pendingErrorRef.current = null;
@@ -109,16 +136,9 @@ export default function Home() {
     if (videoRef.current) {
       const v = videoRef.current;
       v.currentTime = 0;
-      v.playbackRate = 0.5; // Start in 0.5 slow motion
+      v.playbackRate = 1.0;
       v.muted = false;
       v.volume = 1.0;
-
-      // If response takes longer than 2s, switch to high slow motion (0.3x)
-      slowMotionTimerRef.current = setTimeout(() => {
-        if (videoRef.current && isPlayingVideoRef.current && !pendingOutputRef.current && !pendingErrorRef.current) {
-          videoRef.current.playbackRate = 0.3;
-        }
-      }, 2000);
 
       const playPromise = v.play();
       if (playPromise !== undefined) {
@@ -134,7 +154,7 @@ export default function Home() {
   }
 
   function handleVideoEnded() {
-    clearSlowMotionTimer();
+    clearPauseResumeTimer();
     if (videoRef.current) {
       videoRef.current.playbackRate = 1.0;
     }
@@ -165,7 +185,7 @@ export default function Home() {
       if (videoRef.current && isPlayingVideoRef.current) {
         const v = videoRef.current;
         v.currentTime = 0;
-        v.playbackRate = 0.3; // High slow motion while waiting for long result
+        hasPausedAtThreeRef.current = false;
         const playPromise = v.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
@@ -179,14 +199,11 @@ export default function Home() {
   }
 
   function handleApiResponse(output: OutputResponse) {
-    clearSlowMotionTimer();
     pendingOutputRef.current = output;
     setPendingOutput(output);
 
-    if (videoRef.current && isPlayingVideoRef.current) {
-      // Play at 0.5x slow motion when result occurs
-      videoRef.current.playbackRate = 0.5;
-    } else {
+    // If video has finished or isn't playing, immediately show output
+    if (!isPlayingVideoRef.current || videoEndedRef.current) {
       setActiveOutput(output);
       if (output.type === "ask") {
         setPending({
@@ -240,12 +257,10 @@ export default function Home() {
         },
       });
     } catch (e) {
-      clearSlowMotionTimer();
+      clearPauseResumeTimer();
       const errMsg = e instanceof Error ? e.message : String(e);
       pendingErrorRef.current = errMsg;
-      if (videoRef.current && isPlayingVideoRef.current) {
-        videoRef.current.playbackRate = 0.5;
-      } else {
+      if (!isPlayingVideoRef.current || videoEndedRef.current) {
         setError(errMsg);
         setBusy(false);
       }
@@ -270,12 +285,10 @@ export default function Home() {
         },
       });
     } catch (e) {
-      clearSlowMotionTimer();
+      clearPauseResumeTimer();
       const errMsg = e instanceof Error ? e.message : String(e);
       pendingErrorRef.current = errMsg;
-      if (videoRef.current && isPlayingVideoRef.current) {
-        videoRef.current.playbackRate = 0.5;
-      } else {
+      if (!isPlayingVideoRef.current || videoEndedRef.current) {
         setError(errMsg);
         setBusy(false);
       }
@@ -309,6 +322,7 @@ export default function Home() {
           playsInline
           preload="auto"
           controls={false}
+          onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
           onError={handleVideoPlaybackError}
         />
