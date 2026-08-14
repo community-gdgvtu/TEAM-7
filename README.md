@@ -4,6 +4,25 @@
 
 ---
 
+## 📜 Real Data Policy
+
+**Panchayat AI does not fabricate seller identities, prices, locations, availability or negotiation outcomes. Business discovery is based on external location/business data sources. Seller offers are generated only by connected sellers through authorized communication channels. AI-generated content is treated as a proposal and validated against system state before becoming an operational fact.**
+
+---
+
+## 🗺️ Real Google Maps Integration Architecture
+
+Panchayat AI integrates directly with **Google Maps Platform** APIs:
+
+1. **Google Places API**:
+   - **Nearby Sellers & Business Details**: Live place search, place IDs, categories, phone numbers, ratings, business status.
+   - **Geocoding & Reverse Geocoding**: Converts coordinates to human-readable localities and vice versa.
+
+2. **Google Routes API**:
+   - **Distance & Travel Time Computation**: Traffic-aware driving routes, ETAs, and distance matrices between customers and local merchants.
+
+---
+
 ## 🌟 Hero Feature: Fact Bus (Shared Negotiation Memory)
 
 The **Fact Bus** is Panchayat AI’s real-time, shared negotiation memory. As worker agents negotiate concurrently with multiple local sellers, every price drop is recorded in the Fact Bus. When a lower offer is discovered (e.g. Seller B offers ₹59,500), Panchayat AI immediately leverages this benchmark in active negotiations with competing sellers (*"Another verified local seller offered ₹59,500. Can you improve that?"*).
@@ -29,8 +48,8 @@ LLM Proposes Action  ──►  Business Rules Validation  ──►  Fact Bus &
 ```
 panchayat-ai/
 ├── apps/
-│   ├── web/               # Frontend (React, TypeScript, Tailwind CSS, Framer Motion, Lucide)
-│   └── api/               # FastAPI Backend (Python, Pydantic v2, WebSockets, Rules Engine, Agents)
+│   ├── web/               # Frontend (React, TypeScript, Tailwind CSS, Lucide)
+│   └── api/               # FastAPI Backend (Python, Pydantic v2, WebSockets, Rules Engine, Places/Routes API)
 ├── packages/
 │   ├── shared-types/      # Shared TypeScript contracts
 │   ├── ui/                # UI design system components

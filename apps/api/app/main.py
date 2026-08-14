@@ -1,9 +1,16 @@
 import os
 import sys
+import site
 import time
+
+# Ensure Windows user site-packages is on sys.path
+user_site = site.getusersitepackages()
+if user_site and user_site not in sys.path:
+    sys.path.append(user_site)
 
 # Ensure apps/api is on sys.path when executed directly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

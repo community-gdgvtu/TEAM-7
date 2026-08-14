@@ -8,25 +8,44 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { CommandCenter } from './components/CommandCenter';
 import { VoiceModal } from './components/VoiceModal';
 import { AuthModal } from './components/AuthModal';
+import { AuthLandingPage } from './components/AuthLandingPage';
 import { LocationPickerModal } from './components/LocationPickerModal';
 import type { Language, NegotiationSession, Requirement } from './types';
 import { factBus } from './services/factBusStore';
 import { discoverLocalSellers } from './services/discoveryAgent';
 import { negotiationEngine } from './services/negotiationEngine';
+import { usePermission, TabId } from './hooks/usePermission';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'customer' | 'negotiation' | 'results' | 'seller' | 'admin' | 'command_center'>('customer');
+  const { user, defaultTab, canAccessTab } = usePermission();
+  const [activeTab, setActiveTab] = useState<TabId>('customer');
   const [language, setLanguage] = useState<Language>('en');
   const [session, setSession] = useState<NegotiationSession>(factBus.getSession());
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
+  // Sync activeTab with role default when user changes (login/logout/switch role)
   useEffect(() => {
-    const unsubscribe = factBus.subscribe((updatedSession) => {
+    if (user) {
+      setActiveTab(defaultTab);
+    }
+  }, [user?.id, user?.role, defaultTab]);
+
+  // Route Guard: Prevent access to unpermitted tabs for current role
+  useEffect(() => {
+    if (user && !canAccessTab(activeTab)) {
+      setActiveTab(defaultTab);
+    }
+  }, [user, activeTab, defaultTab, canAccessTab]);
+
+  useEffect(() => {
+    const unsubFactBus = factBus.subscribe((updatedSession) => {
       setSession(updatedSession);
     });
-    return () => unsubscribe();
+    return () => {
+      unsubFactBus();
+    };
   }, []);
 
   const handleStartNegotiation = (req: Requirement) => {
@@ -50,13 +69,18 @@ export function App() {
   };
 
   const handleRestart = () => {
-    setActiveTab('customer');
+    setActiveTab(defaultTab);
   };
+
+  // Mandatory Authentication Gate: Render AuthLandingPage first if unauthenticated
+  if (!user) {
+    return <AuthLandingPage />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 flex flex-col">
       
-      {/* Global Header */}
+      {/* Global Header — Filtered by Role */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -68,9 +92,9 @@ export function App() {
         onOpenLocationPicker={() => setIsLocationModalOpen(true)}
       />
 
-      {/* Main View Router */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        {activeTab === 'customer' && (
+      {/* Main View Router — Guarded by RBAC */}
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 pb-16">
+        {activeTab === 'customer' && canAccessTab('customer') && (
           <CustomerDashboard
             language={language}
             onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
@@ -78,36 +102,37 @@ export function App() {
           />
         )}
 
-        {activeTab === 'negotiation' && (
+        {activeTab === 'negotiation' && canAccessTab('negotiation') && (
           <LiveNegotiation
             session={session}
             onNegotiationComplete={handleNegotiationComplete}
+            onOpenLocationPicker={() => setIsLocationModalOpen(true)}
           />
         )}
 
-        {activeTab === 'results' && (
+        {activeTab === 'results' && canAccessTab('results') && (
           <ResultsScreen
             session={session}
             onRestart={handleRestart}
           />
         )}
 
-        {activeTab === 'seller' && (
+        {activeTab === 'seller' && canAccessTab('seller') && (
           <SellerPortal session={session} />
         )}
 
-        {activeTab === 'command_center' && (
+        {activeTab === 'command_center' && canAccessTab('command_center') && (
           <CommandCenter session={session} />
         )}
 
-        {activeTab === 'admin' && (
+        {activeTab === 'admin' && canAccessTab('admin') && (
           <AdminDashboard session={session} />
         )}
       </main>
 
       {/* Global Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500 w-full">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-300">PANCHAYAT AI</span> — Shared Negotiation Memory Protocol
           </div>

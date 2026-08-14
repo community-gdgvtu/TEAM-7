@@ -51,4 +51,21 @@ class BusinessRulesEngine:
         # Rule 4: Validation Success
         return True, proposed_price, f"VALID: Proposal of ₹{proposed_price:,.0f} passed all deterministic business invariants."
 
+    @classmethod
+    def validate_offer(
+        cls,
+        proposed_price: float,
+        target_budget: float = 60000.0,
+        minimum_acceptable_price: float = 50000.0,
+        round_number: int = 1,
+        max_rounds: int = 4
+    ) -> Dict[str, Any]:
+        """Validates an offer against floor and round limits."""
+        if round_number > max_rounds:
+            return {"is_valid": False, "reason": f"Maximum negotiation rounds ({max_rounds}) reached."}
+        if proposed_price < minimum_acceptable_price:
+            return {"is_valid": False, "reason": f"Proposed price ₹{proposed_price:,.2f} breaches seller minimum acceptable floor price ₹{minimum_acceptable_price:,.2f}."}
+        return {"is_valid": True, "reason": "Proposal passed deterministic business rules validation."}
+
 rules_engine = BusinessRulesEngine()
+

@@ -129,8 +129,8 @@ class RealNegotiationChannelEngine:
         # Deterministic Rules Engine Validation before outbound dispatch
         rule_check = rules_engine.validate_offer(
             proposed_price=target_price,
-            target_budget=target_price * 1.10 if target_price else 60000.0, # target budget
-            minimum_acceptable_price=target_price * 0.90 if target_price else 50000.0,
+            target_budget=60000.0,
+            minimum_acceptable_price=50000.0,
             round_number=1,
             max_rounds=5
         )
