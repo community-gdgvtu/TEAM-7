@@ -3,7 +3,9 @@ dist
 .next
 .env
 .env.local
+.env*.local
 *.log
 .DS_Store
 recordings/
 .turbo
+*.tsbuildinfo
