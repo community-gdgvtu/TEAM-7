@@ -99,5 +99,25 @@ export const TRANSLATIONS: Record<Language, {
     adminDashboard: 'مارکيٹ انٹيلي جنس ڈيش بورڈ',
     disclaimer: 'پنچائت AI نے رابطہ کردہ دکانداروں ميں سے بہترين مقابلہ جاتی افر دريافت کی۔',
     improveOffer: 'افر ميں اضافہ کريں'
+  },
+  ja: {
+    tagline: 'PANCHAYAT AI',
+    subtagline: '地域市場のリアルタイム価格交渉および最適価格発見AIアシスタント',
+    searchPlaceholder: '今日何をお探しですか？ (例: ₹60,000以下のノートパソコン)',
+    popularCategories: '人気カテゴリー',
+    recentSearches: '最近の検索',
+    voiceButton: 'Panchayat AIと音声で話す',
+    voiceListening: '音声リクエストを聞いています...',
+    startNegotiation: 'リアルタイム交渉を開始',
+    liveNegotiation: 'ライブ交渉ストリーム',
+    factBusHeader: 'ファクトバス — 共有交渉メモリ',
+    bestDiscoveredOffer: '検出された最良のオファー',
+    recommendationHeader: '交渉完了 — おすすめのベスト取引',
+    dealScore: '取引スコア',
+    potentialSavings: '見込まれる節約額',
+    sellerPortal: '販売者ポータル＆カウンターオファーセンター',
+    adminDashboard: '市場インテリジェンスダッシュボード',
+    disclaimer: 'Panchayat AIは連絡した地域の販売者の中から最も競争力のあるオファーを検出しました。',
+    improveOffer: 'オファーを改善 / ベンチマーク価格に合わせる'
   }
 };

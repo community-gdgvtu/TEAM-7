@@ -67,6 +67,22 @@ export const SAMPLE_PROMPTS: SamplePrompt[] = [
     }
   },
   {
+    id: 'p-sony-ja',
+    title: 'Sony Headphones under ₹9,000 (Japanese)',
+    category: 'Electronics',
+    language: 'ja',
+    text: 'ソニーのノイズキャンセリングヘッドホンを₹9,000以下で探しています。',
+    translation: 'Looking for Sony noise-canceling headphones under ₹9,000.',
+    extracted: {
+      product: 'Sony Wireless Headphones',
+      brand: 'Sony',
+      budget: 9000,
+      quantity: '1 Unit',
+      location: 'Hulkoti Electronics Plaza',
+      preferences: ['Active Noise Cancellation', 'Official Sony Warranty', 'Quick Charge']
+    }
+  },
+  {
     id: 'p-drill',
     title: '500W Drill Machine under ₹2,500 (Urdu)',
     category: 'Hardware',

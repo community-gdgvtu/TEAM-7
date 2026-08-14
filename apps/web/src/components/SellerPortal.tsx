@@ -863,6 +863,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({ session }) => {
                   { code: 'hi', label: 'Hindi 🇮🇳' },
                   { code: 'kn', label: 'Kannada 🇮🇳' },
                   { code: 'ur', label: 'Urdu 🇮🇳' },
+                  { code: 'ja', label: 'Japanese 🇯🇵' },
                 ].map((lang) => (
                   <label
                     key={lang.code}

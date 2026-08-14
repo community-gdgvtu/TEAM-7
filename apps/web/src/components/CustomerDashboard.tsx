@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { Language, Requirement } from '../types';
 import { SAMPLE_PROMPTS, SamplePrompt } from '../data/samplePrompts';
+import { TRANSLATIONS } from '../data/translations';
 import { analyzeRequirement } from '../services/requirementAgent';
 
 interface CustomerDashboardProps {
@@ -39,6 +40,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const [showProductWarningModal, setShowProductWarningModal] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic Translations helper for active language
+  const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   // Mandatory Product Validation Handler
   const handleValidateAndProceed = (targetReq?: Requirement | null) => {
@@ -123,22 +127,22 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         </div>
       </div>
       
-      {/* Vercel / Gemini Style Landing Hero */}
+      {/* Dynamic Translated Landing Hero */}
       <div className="relative z-10 text-center max-w-4xl mx-auto space-y-6 pt-2">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-amber-400 text-xs font-black tracking-wide shadow-md">
           <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-          Autonomous Local Market Price Discovery & Bargaining Engine
+          {t.tagline}
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
-          Your AI agent for the <br />
+          {t.subtagline.split('&')[0]} <br />
           <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400 bg-clip-text text-transparent">
-            local offline market.
+            {t.subtagline.split('&')[1] || t.subtagline}
           </span>
         </h1>
 
         <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-medium leading-relaxed">
-          Eliminate price opacity. Panchayat AI discovers nearby merchants, gathers real-time competitive quotes, and bargains using shared negotiation memory.
+          {t.disclaimer}
         </p>
 
         {/* Primary & Secondary Hero Actions */}
@@ -147,7 +151,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             onClick={() => handleValidateAndProceed()}
             className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 hover:scale-105 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Start a negotiation <ArrowRight className="w-4 h-4" />
+            {t.startNegotiation} <ArrowRight className="w-4 h-4" />
           </button>
 
           <button
@@ -159,36 +163,42 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         </div>
       </div>
 
-      {/* How It Works Explainer Dropdown */}
+      {/* How It Works & Innovation Explainer Dropdown */}
       {showHowItWorks && (
         <div className="relative z-10 max-w-4xl mx-auto bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl animate-fadeIn space-y-4 backdrop-blur-md">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-            <Zap className="w-4 h-4" /> How Panchayat AI Negotiates For You
-          </h3>
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <Zap className="w-4 h-4" /> Innovation & Originality Architecture
+            </h3>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              Hackathon Innovation [20%]
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
               <div className="font-bold text-white mb-1 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" /> 1. Requirement Parsing
               </div>
-              <p className="text-slate-400 leading-relaxed">Specify what you want by voice or text. The Requirement Agent converts your prompt into structured constraints.</p>
+              <p className="text-slate-400 leading-relaxed">Specify what you want by voice or text in 5 languages (EN, HI, KN, UR, JA). The Requirement Agent converts your prompt into structured constraints.</p>
             </div>
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
               <div className="font-bold text-white mb-1 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> 2. Fact Bus Memory
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> 2. Fact Bus Shared Memory
               </div>
-              <p className="text-slate-400 leading-relaxed">Worker agents contact local merchants concurrently. Every price drop is recorded in the Fact Bus memory to leverage benchmarks.</p>
+              <p className="text-slate-400 leading-relaxed">Worker agents contact local merchants concurrently. Every verified price drop is logged into Fact Bus memory to push competing local sellers down.</p>
             </div>
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
               <div className="font-bold text-white mb-1 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> 3. Multi-Factor Deal Scoring
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> 3. Business Rules Engine
               </div>
-              <p className="text-slate-400 leading-relaxed">The Deal Intelligence Agent ranks offers using price, warranty, distance, and merchant reliability rating.</p>
+              <p className="text-slate-400 leading-relaxed">Prevents AI price hallucination. AI agents propose bargains, but a deterministic Python Rules Engine validates floor prices and constraints before committing.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Requirement Search Input Bar */}
+      {/* Main Requirement Search Input Bar — Translated Placeholder */}
       <div className="relative z-10 max-w-3xl mx-auto">
         <form onSubmit={handleTextSearch} className="relative flex items-center">
           <Search className="w-5 h-5 text-slate-500 absolute left-4 pointer-events-none" />
@@ -197,18 +207,18 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Enter product to negotiate (e.g., 'Laptop for coding under ₹60,000')..."
+            placeholder={t.searchPlaceholder}
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-12 pr-32 py-4 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 shadow-2xl transition-all"
           />
           <div className="absolute right-2 flex items-center gap-1.5">
             <button
               type="button"
               onClick={onOpenVoiceModal}
-              title="Voice Search (English, Hindi, Kannada, Urdu)"
+              title="Voice Search (English, Hindi, Kannada, Urdu, Japanese)"
               className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-all flex items-center gap-1 text-xs font-bold cursor-pointer"
             >
               <Mic className="w-4 h-4" />
-              <span className="hidden sm:inline">Voice</span>
+              <span className="hidden sm:inline">{t.voiceButton.split(' ')[0]}</span>
             </button>
             <button
               type="submit"
@@ -220,10 +230,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           </div>
         </form>
 
-        {/* Quick Sample Prompts */}
+        {/* Quick Sample Prompts — Filtered or Fallback */}
         <div className="flex items-center gap-2 mt-3 flex-wrap text-xs">
-          <span className="text-slate-500 font-semibold">Try sample prompts:</span>
-          {SAMPLE_PROMPTS.slice(0, 3).map((prompt) => (
+          <span className="text-slate-500 font-semibold">{t.recentSearches}:</span>
+          {SAMPLE_PROMPTS.filter((p) => p.language === language || language === 'en').slice(0, 3).map((prompt) => (
             <button
               key={prompt.id}
               onClick={() => handleSelectSample(prompt)}
@@ -239,7 +249,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       <div className="relative z-10 max-w-4xl mx-auto space-y-3">
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-amber-400" /> Popular Local Products
+            <ShoppingBag className="w-4 h-4 text-amber-400" /> {t.popularCategories}
           </span>
           <span className="text-[11px] text-slate-500">1-click requirement fill</span>
         </div>
@@ -375,7 +385,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             onClick={() => handleValidateAndProceed(parsedReq)}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 text-slate-950 font-black text-sm shadow-xl shadow-orange-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Start Negotiation with Local Merchants <ArrowRight className="w-4 h-4" />
+            {t.startNegotiation} <ArrowRight className="w-4 h-4" />
           </button>
 
         </div>

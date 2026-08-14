@@ -2,7 +2,7 @@ import type { Language } from '../types';
 
 /**
  * Voice Mode — Speech Recognition & Text-to-Speech Engine
- * Multi-language support (English, Hindi, Kannada, Urdu)
+ * Multi-language support (English, Hindi, Kannada, Urdu, Japanese)
  */
 export interface VoiceListenerOptions {
   language: Language;
@@ -31,6 +31,7 @@ export class VoiceEngine {
       case 'hi': return 'hi-IN';
       case 'kn': return 'kn-IN';
       case 'ur': return 'ur-PK';
+      case 'ja': return 'ja-JP';
       default: return 'en-IN';
     }
   }
@@ -73,7 +74,8 @@ export class VoiceEngine {
         en: 'I need a laptop for coding under 60,000 rupees',
         hi: 'Mujhe ek Samsung Galaxy phone chahiye 18,000 ke andar',
         kn: 'ನನಗೆ 400 ರೂಪಾಯಿ ಒಳಗೆ 5 ಕೆಜಿ ಅಕ್ಕಿ ಬೇಕು',
-        ur: 'Mujhe 500W drill machine 2500 rupay tak chahiye'
+        ur: 'Mujhe 500W drill machine 2500 rupay tak chahiye',
+        ja: '60,000ルピー以下のプログラミング用ノートパソコンを探しています'
       };
 
       setTimeout(() => {

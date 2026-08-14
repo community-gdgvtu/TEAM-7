@@ -222,6 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <option value="hi" className="bg-slate-900 text-slate-200">HI 🇮🇳</option>
                 <option value="kn" className="bg-slate-900 text-slate-200">KN 🇮🇳</option>
                 <option value="ur" className="bg-slate-900 text-slate-200">UR 🇮🇳</option>
+                <option value="ja" className="bg-slate-900 text-slate-200">JA 🇯🇵 (日本語)</option>
               </select>
             </div>
           </div>

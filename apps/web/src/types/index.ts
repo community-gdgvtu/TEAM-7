@@ -1,4 +1,4 @@
-export type Language = 'en' | 'hi' | 'kn' | 'ur';
+export type Language = 'en' | 'hi' | 'kn' | 'ur' | 'ja';
 
 export type ProductCategory = 'Electronics' | 'Groceries' | 'Clothing' | 'Hardware' | 'Computers';
 

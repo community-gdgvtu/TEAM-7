@@ -130,6 +130,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({
             <option value="hi">Hindi (hi-IN)</option>
             <option value="kn">Kannada (kn-IN)</option>
             <option value="ur">Urdu (ur-IN)</option>
+            <option value="ja">Japanese (ja-JP)</option>
           </select>
         </div>
 
