@@ -59,7 +59,7 @@ export default function Home() {
   const isPlayingVideoRef = useRef(false);
   const pendingOutputRef = useRef<OutputResponse | null>(null);
   const pendingErrorRef = useRef<string | null>(null);
-  const hasPausedAtThreeRef = useRef(false);
+  const hasPausedRef = useRef(false);
   const pauseResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -103,9 +103,9 @@ export default function Home() {
   function handleTimeUpdate() {
     if (!videoRef.current || !isPlayingVideoRef.current) return;
     const v = videoRef.current;
-    // At exactly 3 seconds, pause playback for 4 seconds, then automatically resume
-    if (v.currentTime >= 3.0 && !hasPausedAtThreeRef.current) {
-      hasPausedAtThreeRef.current = true;
+    // At exactly 4 seconds, pause playback for 4 seconds, then automatically resume
+    if (v.currentTime >= 4.0 && !hasPausedRef.current) {
+      hasPausedRef.current = true;
       v.pause();
       clearPauseResumeTimer();
       pauseResumeTimerRef.current = setTimeout(() => {
@@ -123,7 +123,7 @@ export default function Home() {
 
   function startVideoPlayback() {
     clearPauseResumeTimer();
-    hasPausedAtThreeRef.current = false;
+    hasPausedRef.current = false;
     videoEndedRef.current = false;
     pendingOutputRef.current = null;
     pendingErrorRef.current = null;
@@ -185,7 +185,7 @@ export default function Home() {
       if (videoRef.current && isPlayingVideoRef.current) {
         const v = videoRef.current;
         v.currentTime = 0;
-        hasPausedAtThreeRef.current = false;
+        hasPausedRef.current = false;
         const playPromise = v.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
