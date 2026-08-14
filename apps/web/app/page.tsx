@@ -13,24 +13,24 @@ const EXAMPLES = [
 
 type OutputResponse =
   | {
-      type: "ask";
-      data: {
-        skill_id: string;
-        options: { id: string; label: string; emoji: string }[];
-        spec: Record<string, string | number>;
-        phones: string[];
-      };
-    }
-  | {
-      type: "mission";
-      data: {
-        mission_id: string;
-        skill?: { id: string; label: string; emoji: string };
-        counterparties?: Counterparty[];
-        spec?: Record<string, unknown>;
-        test?: boolean;
-      };
+    type: "ask";
+    data: {
+      skill_id: string;
+      options: { id: string; label: string; emoji: string }[];
+      spec: Record<string, string | number>;
+      phones: string[];
     };
+  }
+  | {
+    type: "mission";
+    data: {
+      mission_id: string;
+      skill?: { id: string; label: string; emoji: string };
+      counterparties?: Counterparty[];
+      spec?: Record<string, unknown>;
+      test?: boolean;
+    };
+  };
 
 export default function Home() {
   const router = useRouter();
@@ -103,8 +103,8 @@ export default function Home() {
   function handleTimeUpdate() {
     if (!videoRef.current || !isPlayingVideoRef.current) return;
     const v = videoRef.current;
-    // At exactly 3.6 seconds, pause playback for 4 seconds, then automatically resume
-    if (v.currentTime >= 3.6 && !hasPausedRef.current) {
+    // At exactly 3.7 seconds, pause playback for 4 seconds, then automatically resume
+    if (v.currentTime >= 3.7 && !hasPausedRef.current) {
       hasPausedRef.current = true;
       v.pause();
       clearPauseResumeTimer();
