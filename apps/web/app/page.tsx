@@ -103,8 +103,8 @@ export default function Home() {
   function handleTimeUpdate() {
     if (!videoRef.current || !isPlayingVideoRef.current) return;
     const v = videoRef.current;
-    // At exactly 4 seconds, pause playback for 4 seconds, then automatically resume
-    if (v.currentTime >= 4.0 && !hasPausedRef.current) {
+    // At exactly 3.5 seconds, pause playback for 4 seconds, then automatically resume
+    if (v.currentTime >= 3.5 && !hasPausedRef.current) {
       hasPausedRef.current = true;
       v.pause();
       clearPauseResumeTimer();
